@@ -65,7 +65,7 @@ export const clinicalNotes = pgTable("clinical_notes", {
   prescription: text("prescription"),
   treatmentPlan: text("treatment_plan"),
   isAiDrafted: boolean("is_ai_drafted").default(false),
-  doctorApprovedAt: timestamp("doctor_approved_at").default(null), // NULL يعني لسه مسودة غير معتمدة
+  doctorApprovedAt: timestamp("doctor_approved_at"), // NULL افتراضيًا بدون .notNull()، تعني مسودة غير معتمدة
   createdAt: timestamp("created_at").defaultNow(),
 });
 
