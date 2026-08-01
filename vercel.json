@@ -1,0 +1,37 @@
+{
+  "services": {
+    "frontend": {
+      "root": ".",
+      "framework": "nextjs"
+    },
+    "clinical-notes-service": {
+      "root": "services/clinical-notes-service"
+    },
+    "whatsapp-service": {
+      "root": "services/whatsapp-service"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/clinical-notes-service/(.*)",
+      "dest": {
+        "type": "service",
+        "service": "clinical-notes-service"
+      }
+    },
+    {
+      "src": "/api/whatsapp-service/(.*)",
+      "dest": {
+        "type": "service",
+        "service": "whatsapp-service"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": {
+        "type": "service",
+        "service": "frontend"
+      }
+    }
+  ]
+}
