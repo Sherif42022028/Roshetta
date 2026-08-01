@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-cairo: 'Cairo', sans-serif;
+    --font-mono-data: 'JetBrains Mono', 'Courier New', monospace;
+
+    --background: 38 44% 97%;        /* #FAF7F2 - كريمي دافئ، بديل الأبيض المستشفياتي البارد */
+    --foreground: 60 2% 17%;         /* #2C2C2A */
+
+    --card: 0 0% 100%;
+    --card-foreground: 60 2% 17%;
+
+    --primary: 159 33% 27%;          /* #2D5A4A - أخضر ثقة طبي */
+    --primary-foreground: 0 0% 100%;
+
+    --accent: 170 35% 45%;           /* #4A9B8E - تركواز دافئ، عنصر واحد فقط لكل شاشة */
+    --accent-foreground: 0 0% 100%;
+
+    --warning: 31 62% 48%;           /* #C77D2E - كهرماني، لحالات الغياب HIGH risk فقط */
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 65% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --muted: 40 10% 92%;
+    --muted-foreground: 60 2% 45%;
+
+    --border: 43 21% 87%;            /* #E4E0D6 */
+    --input: 43 21% 87%;
+    --ring: 170 35% 45%;
+    --radius: 10px;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-cairo), system-ui, sans-serif;
+  }
+}
