@@ -3,13 +3,26 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { RxTag } from "@/components/ui/rx-tag";
-import { Search, Plus, UserCheck, Calendar, ArrowLeft, ShieldCheck } from "lucide-react";
+import {
+  Search,
+  Plus,
+  UserCheck,
+  Calendar,
+  ArrowLeft,
+  ShieldCheck,
+  Download,
+  Users,
+  UserPlus,
+  Activity,
+} from "lucide-react";
 
 export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"recent" | "visits" | "name">("recent");
+  
   const [patients, setPatients] = useState([
     {
-      id: "PT-901", // رقم الملف الطبي الثابت الدائم
+      id: "PT-901",
       name: "محمد محمود السيد",
       phone: "01012345678",
       dateOfBirth: "1988-04-12",
@@ -18,7 +31,7 @@ export default function PatientsPage() {
       lastVisitDate: "2026-08-01",
     },
     {
-      id: "PT-902", // رقم الملف الطبي الثابت الدائم
+      id: "PT-902",
       name: "سارة أحمد علي",
       phone: "01198765432",
       dateOfBirth: "1994-09-20",
@@ -27,7 +40,7 @@ export default function PatientsPage() {
       lastVisitDate: "2026-07-28",
     },
     {
-      id: "PT-903", // رقم الملف الطبي الثابت الدائم
+      id: "PT-903",
       name: "محمود حسن مصطفى",
       phone: "01234567890",
       dateOfBirth: "1975-11-05",
@@ -42,21 +55,43 @@ export default function PatientsPage() {
   const [newPhone, setNewPhone] = useState("");
   const [newDob, setNewDob] = useState("");
 
-  const filteredPatients = patients.filter(
-    (p) =>
-      p.name.includes(searchQuery) ||
-      p.phone.includes(searchQuery) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleExportCSV = () => {
+    const headers = "Patient ID,Name,Phone,DOB,Total Visits,Last Visit Date\n";
+    const rows = patients
+      .map(
+        (p) => `${p.id},"${p.name}",${p.phone},${p.dateOfBirth},${p.visitsCount},${p.lastVisitDate}`
+      )
+      .join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Roshetta_Patients_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const filteredPatients = patients
+    .filter(
+      (p) =>
+        p.name.includes(searchQuery) ||
+        p.phone.includes(searchQuery) ||
+        p.id.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortBy === "visits") return b.visitsCount - a.visitsCount;
+      if (sortBy === "name") return a.name.localeCompare(b.name, "ar");
+      return new Date(b.lastVisitDate).getTime() - new Date(a.lastVisitDate).getTime();
+    });
 
   const handleAddPatient = (e: React.FormEvent) => {
     e.preventDefault();
-    // توليد رقم ملف طبي موحد بتسلسل تسلسلي دائم (PT-904, PT-905...)
     const nextSeq = 900 + patients.length + 1;
     const newId = `PT-${nextSeq}`;
-    
+
     const newPatient = {
-      id: newId, // ثابت دائماً
+      id: newId,
       name: newName,
       phone: newPhone,
       dateOfBirth: newDob || "1990-01-01",
@@ -83,14 +118,57 @@ export default function PatientsPage() {
           </p>
         </div>
 
-        {/* Action Button */}
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-accent text-accent-foreground font-semibold px-4 py-2 rounded-md hover:bg-accent/90 transition-colors text-sm shadow-sm flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          تسجيل مريض برقم ملف جديد
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="bg-card border border-border text-foreground hover:bg-muted font-semibold px-3 py-2 rounded-md transition-colors text-xs inline-flex items-center gap-1.5"
+          >
+            <Download className="w-4 h-4 text-muted-foreground" />
+            تصدير الملفات (CSV)
+          </button>
+
+          {/* Accent Action Button */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-accent text-accent-foreground font-semibold px-4 py-2 rounded-md hover:bg-accent/90 transition-colors text-sm shadow-sm flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            تسجيل مريض جديد
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Patients Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 rounded-lg border border-border bg-card shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs text-muted-foreground">إجمالي المرضى المسجلين</span>
+            <p className="text-2xl font-bold font-mono text-foreground mt-1">{patients.length}</p>
+          </div>
+          <div className="p-2.5 rounded bg-primary/10 text-primary">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-lg border border-border bg-card shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs text-muted-foreground">المرضى النشطون هذا الشهر</span>
+            <p className="text-2xl font-bold font-mono text-foreground mt-1">2</p>
+          </div>
+          <div className="p-2.5 rounded bg-accent/15 text-accent">
+            <Activity className="w-5 h-5" />
+          </div>
+        </div>
+
+        <div className="p-4 rounded-lg border border-border bg-card shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs text-muted-foreground">نسبة المرضى الجدد</span>
+            <p className="text-2xl font-bold font-mono text-foreground mt-1">33%</p>
+          </div>
+          <div className="p-2.5 rounded bg-primary/10 text-primary">
+            <UserPlus className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
       {/* Security & Data Integrity Banner */}
@@ -101,16 +179,31 @@ export default function PatientsPage() {
         </span>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="ابحث برقم الملف الطبي الثابت (e.g. PT-901)، اسم المريض، أو رقم الهاتف..."
-          className="w-full pr-10 pl-4 py-2.5 rounded-md border border-input bg-card text-sm font-sans focus:outline-none focus:ring-1 focus:ring-ring"
-        />
+      {/* Search & Sort Controls Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="relative max-w-md w-full">
+          <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="ابحث برقم الملف الطبي الثابت (e.g. PT-901)، اسم المريض، أو رقم الهاتف..."
+            className="w-full pr-10 pl-4 py-2.5 rounded-md border border-input bg-card text-sm font-sans focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-muted-foreground font-semibold">ترتيب حسب:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="p-2 rounded border border-input bg-card text-sm font-sans"
+          >
+            <option value="recent">أحدث زيارة</option>
+            <option value="visits">عدد الزيارات الإجمالي</option>
+            <option value="name">أبجدي بالاسم</option>
+          </select>
+        </div>
       </div>
 
       {/* Patients Directory Table */}

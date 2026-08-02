@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { RxTag } from "@/components/ui/rx-tag";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/brand/logo";
 import {
   User,
   Phone,
@@ -18,6 +19,9 @@ import {
   Activity,
   HeartPulse,
   History,
+  Printer,
+  X,
+  FileCheck,
 } from "lucide-react";
 
 interface Visit {
@@ -36,7 +40,7 @@ interface Visit {
 }
 
 interface Patient {
-  id: string; // رقم الملف الطبي الثابت والخاص بالمريض فقط
+  id: string;
   name: string;
   phone: string;
   dateOfBirth: string;
@@ -50,7 +54,6 @@ interface Patient {
   visits: Visit[];
 }
 
-// السجل المركزي للمرضى بأرقام ملفات موحدة وثابتة لا تتغير إطلاقاً
 const INITIAL_PATIENTS_DATABASE: Record<string, Patient> = {
   "PT-901": {
     id: "PT-901",
@@ -139,35 +142,6 @@ const INITIAL_PATIENTS_DATABASE: Record<string, Patient> = {
       },
     ],
   },
-  "PT-903": {
-    id: "PT-903",
-    name: "محمود حسن مصطفى",
-    phone: "01234567890",
-    dateOfBirth: "1975-11-05",
-    age: 51,
-    gender: "ذكر",
-    bloodGroup: "B+",
-    clinicName: "عيادة روشتة التخصصية",
-    medicalHistorySummary: "سجل طبي عام، فحص روتيني الدوري.",
-    totalVisits: 1,
-    lastVisitDate: "2026-07-12",
-    visits: [
-      {
-        id: "APT-160",
-        date: "2026-07-12",
-        time: "07:00 PM",
-        type: "كشف أول",
-        doctorName: "د. أحمد الشريف",
-        status: "مكتمل",
-        rxNumber: "RX-09410",
-        chiefComplaint: "فحص شامل روتيني",
-        diagnosis: "حالة جيدة العامة",
-        prescription: "فيتامينات متعددة",
-        doctorApprovedAt: "2026-07-12 19:30",
-        fee: "400 EGP",
-      },
-    ],
-  },
 };
 
 export default function PatientDetailPage({
@@ -177,14 +151,12 @@ export default function PatientDetailPage({
 }) {
   const patientId = params.id;
 
-  // جلب بيانات المريض باستخدام رقم الملف الثابت الحصري
   const [patient, setPatient] = useState<Patient>(() => {
     if (INITIAL_PATIENTS_DATABASE[patientId]) {
       return INITIAL_PATIENTS_DATABASE[patientId];
     }
-    // للمرضى الجدد: تثبيت رقم الملف الممرر من المسار بشكل دائم
     return {
-      id: patientId, // رقم الملف دائم وثابت لا يتغير
+      id: patientId,
       name: `مريض (${patientId})`,
       phone: "01000000000",
       dateOfBirth: "1990-01-01",
@@ -215,6 +187,7 @@ export default function PatientDetailPage({
   });
 
   const [showAddVisitModal, setShowAddVisitModal] = useState(false);
+  const [selectedVisitForPrint, setSelectedVisitForPrint] = useState<Visit | null>(null);
   const [visitType, setVisitType] = useState<"إعادة / متابعة" | "كشف جديد">("إعادة / متابعة");
   const [visitDate, setVisitDate] = useState("2026-08-05");
   const [visitTime, setVisitTime] = useState("05:30 PM");
@@ -231,10 +204,9 @@ export default function PatientDetailPage({
 
   const handleAddVisit = (e: React.FormEvent) => {
     e.preventDefault();
-    // توليد رقم روشتة منفصل للزيارة مع الاحتفاظ التام برقم الملف الطبي الثابت للمريض
     const visitSeq = patient.visits.length + 1;
     const newRxNumber = `RX-${10490 + visitSeq}`;
-    
+
     const newVisit: Visit = {
       id: `APT-${100 + visitSeq}`,
       date: visitDate,
@@ -242,7 +214,7 @@ export default function PatientDetailPage({
       type: visitType,
       doctorName: "د. أحمد الشريف",
       status: "مجدول",
-      rxNumber: newRxNumber, // رقم الروشتة الخاص بهذه الزيرة
+      rxNumber: newRxNumber,
       chiefComplaint: visitType === "إعادة / متابعة" ? "متابعة كشف سابقة واستشارة أدوية" : "كشف وتشخيص جديد",
       diagnosis: "في انتظار الكشف",
       prescription: "لم تحدد بعد",
@@ -262,7 +234,7 @@ export default function PatientDetailPage({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top Breadcrumb & Navigation Header */}
+      {/* Top Navigation & Action Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-4">
         <div className="flex items-center gap-3">
           <Link
@@ -275,7 +247,6 @@ export default function PatientDetailPage({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-primary font-sans">{patient.name}</h1>
-              {/* رقم الملف الطبي دائم وثابت ومميز ببطاقة RxTag */}
               <div className="flex items-center gap-1.5 bg-card px-2.5 py-1 rounded border border-primary/30">
                 <span className="text-xs text-muted-foreground font-semibold">رقم الملف الثابت:</span>
                 <RxTag number={patient.id} className="text-sm px-2.5 py-0.5" />
@@ -287,14 +258,24 @@ export default function PatientDetailPage({
           </div>
         </div>
 
-        {/* Action Button */}
-        <button
-          onClick={() => setShowAddVisitModal(true)}
-          className="bg-accent text-accent-foreground font-semibold px-4 py-2 rounded-md hover:bg-accent/90 transition-colors text-sm shadow-sm flex items-center gap-2"
-        >
-          <PlusCircle className="w-4 h-4" />
-          حجز موعد إعادة جديدة
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.print()}
+            className="bg-card border border-border text-foreground hover:bg-muted font-semibold px-3 py-2 rounded-md transition-colors text-xs inline-flex items-center gap-1.5"
+          >
+            <Printer className="w-4 h-4 text-muted-foreground" />
+            طباعة التقرير الشامل
+          </button>
+
+          {/* Accent Button */}
+          <button
+            onClick={() => setShowAddVisitModal(true)}
+            className="bg-accent text-accent-foreground font-semibold px-4 py-2 rounded-md hover:bg-accent/90 transition-colors text-sm shadow-sm flex items-center gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
+            حجز موعد إعادة جديدة
+          </button>
+        </div>
       </div>
 
       {/* Patient Profile Quick Cards */}
@@ -393,104 +374,130 @@ export default function PatientDetailPage({
           </span>
         </div>
 
-        {patient.visits.length === 0 ? (
-          <div className="p-8 text-center border border-dashed border-border rounded-lg bg-card">
-            <p className="text-sm text-muted-foreground">لا توجد زيارات سابقة مسجلة للمريض حتى الآن.</p>
-          </div>
-        ) : (
-          <div className="space-y-4 relative before:absolute before:right-6 before:top-3 before:bottom-3 before:w-0.5 before:bg-border/70">
-            {patient.visits.map((visit) => (
-              <div
-                key={visit.id}
-                className="relative mr-12 rounded-lg border border-border bg-card p-5 space-y-4 shadow-sm hover:border-primary/40 transition-colors"
-              >
-                {/* Timeline Icon Node */}
-                <div className="absolute -right-[34px] top-5 w-7 h-7 rounded-full bg-card border-2 border-primary flex items-center justify-center text-primary shadow-xs">
-                  <Stethoscope className="w-3.5 h-3.5" />
-                </div>
+        {patient.visits.map((visit) => (
+          <div
+            key={visit.id}
+            className="rounded-lg border border-border bg-card p-5 space-y-4 shadow-sm hover:border-primary/40 transition-colors"
+          >
+            {/* Visit Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/60 pb-3">
+              <div className="flex items-center gap-3">
+                <Badge variant={visit.type.includes("إعادة") ? "accent" : "default"}>
+                  {visit.type}
+                </Badge>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {visit.date} • {visit.time}
+                </span>
+                <span className="text-xs font-semibold text-foreground/80">
+                  {visit.doctorName}
+                </span>
+              </div>
 
-                {/* Visit Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-border/60 pb-3">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={visit.type.includes("إعادة") ? "accent" : "default"}>
-                      {visit.type}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {visit.date} • {visit.time}
-                    </span>
-                    <span className="text-xs font-semibold text-foreground/80">
-                      {visit.doctorName}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-muted-foreground">الرسوم: {visit.fee}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[11px] text-muted-foreground">رقم الروشتة:</span>
-                      <RxTag number={visit.rxNumber} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Visit Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="p-3 rounded border border-border/50 bg-background/50 space-y-1">
-                    <span className="text-xs font-bold text-muted-foreground block">الشكوى / سبب الزيارة</span>
-                    <p className="text-foreground text-xs leading-relaxed">{visit.chiefComplaint}</p>
-                  </div>
-
-                  <div className="p-3 rounded border border-border/50 bg-background/50 space-y-1">
-                    <span className="text-xs font-bold text-muted-foreground block">التشخيص الطبي</span>
-                    <p className="text-foreground text-xs font-semibold">{visit.diagnosis}</p>
-                  </div>
-
-                  <div className="p-3 rounded border border-border/50 bg-background/50 space-y-1">
-                    <span className="text-xs font-bold text-muted-foreground block">الروشتة والعلاج المقترح</span>
-                    <p className="text-foreground text-xs font-mono whitespace-pre-line">{visit.prescription}</p>
-                  </div>
-                </div>
-
-                {/* Approval & Footer Status */}
-                <div className="flex justify-between items-center pt-2 text-xs border-t border-border/40">
-                  <div className="flex items-center gap-2">
-                    {visit.doctorApprovedAt ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-accent" />
-                        <span className="text-accent font-semibold">
-                          روشتة معتمدة رسمياً بتاريخ <span className="font-mono">{visit.doctorApprovedAt}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <ShieldAlert className="w-4 h-4 text-warning" />
-                        <span className="text-warning font-semibold">
-                          مسودة ذكاء اصطناعي (في انتظار اعتماد الطبيب)
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 font-mono text-muted-foreground">
-                    <span>رقم الملف الدائم: <span className="font-bold text-primary">{patient.id}</span></span>
-                    <span>• المعاملة: {visit.id}</span>
-                  </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedVisitForPrint(visit)}
+                  className="text-xs font-semibold text-primary hover:text-accent border border-primary/20 px-2.5 py-1 rounded inline-flex items-center gap-1"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  معاينة وطباعة الروشتة
+                </button>
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] text-muted-foreground">رقم الروشتة:</span>
+                  <RxTag number={visit.rxNumber} />
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Visit Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="p-3 rounded border border-border/50 bg-background/50 space-y-1">
+                <span className="text-xs font-bold text-muted-foreground block">الشكوى / سبب الزيارة</span>
+                <p className="text-foreground text-xs leading-relaxed">{visit.chiefComplaint}</p>
+              </div>
+
+              <div className="p-3 rounded border border-border/50 bg-background/50 space-y-1">
+                <span className="text-xs font-bold text-muted-foreground block">التشخيص الطبي</span>
+                <p className="text-foreground text-xs font-semibold">{visit.diagnosis}</p>
+              </div>
+
+              <div className="p-3 rounded border border-border/50 bg-background/50 space-y-1">
+                <span className="text-xs font-bold text-muted-foreground block">الروشتة والعلاج المقترح</span>
+                <p className="text-foreground text-xs font-mono whitespace-pre-line">{visit.prescription}</p>
+              </div>
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
-      {/* Modal: Add New Re-visit / Follow-up Appointment */}
+      {/* Official Prescription Print Modal */}
+      {selectedVisitForPrint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-lg bg-card rounded-lg border border-border p-6 space-y-6 shadow-2xl text-right relative">
+            <button
+              onClick={() => setSelectedVisitForPrint(null)}
+              className="absolute left-4 top-4 p-1.5 text-muted-foreground hover:text-foreground rounded"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Prescription Header */}
+            <div className="flex justify-between items-center border-b border-border pb-4">
+              <Logo />
+              <div className="text-left space-y-1">
+                <RxTag number={selectedVisitForPrint.rxNumber} className="text-base px-3 py-1" />
+                <p className="text-[11px] font-mono text-muted-foreground">التاريخ: {selectedVisitForPrint.date}</p>
+              </div>
+            </div>
+
+            {/* Patient Info Header */}
+            <div className="grid grid-cols-2 gap-4 p-3 bg-primary/5 rounded border border-primary/20 text-xs">
+              <div>
+                <span className="text-muted-foreground font-semibold">اسم المريض: </span>
+                <span className="font-bold text-foreground">{patient.name}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground font-semibold">رقم الملف الثابت: </span>
+                <span className="font-bold font-mono text-primary">{patient.id}</span>
+              </div>
+            </div>
+
+            {/* Prescription Body */}
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2 text-primary font-bold border-b border-border/50 pb-2">
+                <FileCheck className="w-4 h-4" />
+                <span>العلاج والتعليمات الطبية (Rx)</span>
+              </div>
+              <div className="p-4 rounded border border-border bg-background font-mono text-sm leading-relaxed whitespace-pre-line">
+                {selectedVisitForPrint.prescription}
+              </div>
+            </div>
+
+            {/* Doctor Signature Footer */}
+            <div className="pt-6 border-t border-border flex justify-between items-end text-xs">
+              <div>
+                <p className="font-bold text-foreground">{selectedVisitForPrint.doctorName}</p>
+                <p className="text-muted-foreground">استشاري الباطنة والكبد</p>
+                <p className="text-[10px] font-mono text-accent mt-1">توقيع رقمي معتمد: {selectedVisitForPrint.doctorApprovedAt || "معتمد"}</p>
+              </div>
+              <button
+                onClick={() => window.print()}
+                className="bg-primary text-primary-foreground font-semibold px-4 py-2 rounded text-xs inline-flex items-center gap-1.5"
+              >
+                <Printer className="w-4 h-4" />
+                طباعة الروشتة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add New Re-visit */}
       {showAddVisitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md bg-card rounded-lg border border-border p-6 space-y-5 shadow-lg text-right">
             <div className="flex justify-between items-center border-b border-border pb-3">
               <h3 className="font-bold text-lg text-primary">حجز موعد إعادة جديدة للمريض</h3>
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">رقم الملف الثابت:</span>
-                <RxTag number={patient.id} />
-              </div>
+              <RxTag number={patient.id} />
             </div>
 
             <form onSubmit={handleAddVisit} className="space-y-4 text-sm">
@@ -525,10 +532,6 @@ export default function PatientDetailPage({
                   placeholder="05:30 PM"
                   className="w-full p-2.5 rounded border border-input bg-background font-mono text-sm"
                 />
-              </div>
-
-              <div className="p-3 bg-primary/5 rounded border border-primary/20 text-xs text-primary">
-                تنبيه أمان: ميعاد الإعادة سيتسجل دائماً تحت رقم الملف الثابت الفريد <span className="font-bold font-mono text-accent">{patient.id}</span> لضمان تسلسل السجل الطبي لـ <span className="font-bold">{patient.name}</span>.
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
