@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { RxTag } from "@/components/ui/rx-tag";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ interface Visit {
 }
 
 interface Patient {
-  id: string;
+  id: string; // رقم الملف الطبي الثابت والخاص بالمريض فقط
   name: string;
   phone: string;
   dateOfBirth: string;
@@ -50,27 +50,19 @@ interface Patient {
   visits: Visit[];
 }
 
-export default function PatientDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const patientId = params.id;
-
-  // Mock patient data state with full history and re-visits
-  const [patient, setPatient] = useState<Patient>({
-    id: patientId,
-    name: patientId === "PT-902" ? "سارة أحمد علي" : "محمد محمود السيد",
-    phone: patientId === "PT-902" ? "01198765432" : "01012345678",
-    dateOfBirth: patientId === "PT-902" ? "1994-09-20" : "1988-04-12",
-    age: patientId === "PT-902" ? 32 : 38,
-    gender: patientId === "PT-902" ? "أنثى" : "ذكر",
+// السجل المركزي للمرضى بأرقام ملفات موحدة وثابتة لا تتغير إطلاقاً
+const INITIAL_PATIENTS_DATABASE: Record<string, Patient> = {
+  "PT-901": {
+    id: "PT-901",
+    name: "محمد محمود السيد",
+    phone: "01012345678",
+    dateOfBirth: "1988-04-12",
+    age: 38,
+    gender: "ذكر",
     bloodGroup: "O+",
     clinicName: "عيادة روشتة التخصصية",
     medicalHistorySummary:
-      patientId === "PT-902"
-        ? "لا توجد حساسية معروفة لأدوية. تاريخ عائلي لمرض السكري."
-        : "حساسية سابقة ضد البنسلين. يعاني من ارتفاع ضغط الدم الخفيف ومتابع بانتظام.",
+      "حساسية سابقة ضد البنسلين. يعاني من ارتفاع ضغط الدم الخفيف ومتابع بانتظام.",
     totalVisits: 3,
     lastVisitDate: "2026-08-01",
     visits: [
@@ -117,9 +109,111 @@ export default function PatientDetailPage({
         fee: "400 EGP",
       },
     ],
+  },
+  "PT-902": {
+    id: "PT-902",
+    name: "سارة أحمد علي",
+    phone: "01198765432",
+    dateOfBirth: "1994-09-20",
+    age: 32,
+    gender: "أنثى",
+    bloodGroup: "A+",
+    clinicName: "عيادة روشتة التخصصية",
+    medicalHistorySummary: "لا توجد حساسية معروفة لأدوية. تاريخ عائلي لمرض السكري.",
+    totalVisits: 2,
+    lastVisitDate: "2026-07-28",
+    visits: [
+      {
+        id: "APT-199",
+        date: "2026-07-28",
+        time: "05:00 PM",
+        type: "إعادة / متابعة",
+        doctorName: "د. أحمد الشريف",
+        status: "مكتمل",
+        rxNumber: "RX-10311",
+        chiefComplaint: "متابعة بعد الكشف الأولي",
+        diagnosis: "تحسن في الأعراض التنفسية",
+        prescription: "مكملات غذائية وفيتامين C",
+        doctorApprovedAt: "2026-07-28 17:20",
+        fee: "150 EGP",
+      },
+    ],
+  },
+  "PT-903": {
+    id: "PT-903",
+    name: "محمود حسن مصطفى",
+    phone: "01234567890",
+    dateOfBirth: "1975-11-05",
+    age: 51,
+    gender: "ذكر",
+    bloodGroup: "B+",
+    clinicName: "عيادة روشتة التخصصية",
+    medicalHistorySummary: "سجل طبي عام، فحص روتيني الدوري.",
+    totalVisits: 1,
+    lastVisitDate: "2026-07-12",
+    visits: [
+      {
+        id: "APT-160",
+        date: "2026-07-12",
+        time: "07:00 PM",
+        type: "كشف أول",
+        doctorName: "د. أحمد الشريف",
+        status: "مكتمل",
+        rxNumber: "RX-09410",
+        chiefComplaint: "فحص شامل روتيني",
+        diagnosis: "حالة جيدة العامة",
+        prescription: "فيتامينات متعددة",
+        doctorApprovedAt: "2026-07-12 19:30",
+        fee: "400 EGP",
+      },
+    ],
+  },
+};
+
+export default function PatientDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const patientId = params.id;
+
+  // جلب بيانات المريض باستخدام رقم الملف الثابت الحصري
+  const [patient, setPatient] = useState<Patient>(() => {
+    if (INITIAL_PATIENTS_DATABASE[patientId]) {
+      return INITIAL_PATIENTS_DATABASE[patientId];
+    }
+    // للمرضى الجدد: تثبيت رقم الملف الممرر من المسار بشكل دائم
+    return {
+      id: patientId, // رقم الملف دائم وثابت لا يتغير
+      name: `مريض (${patientId})`,
+      phone: "01000000000",
+      dateOfBirth: "1990-01-01",
+      age: 36,
+      gender: "غير محدد",
+      bloodGroup: "O+",
+      clinicName: "عيادة روشتة التخصصية",
+      medicalHistorySummary: "سجل طبي جديد للمريض.",
+      totalVisits: 1,
+      lastVisitDate: "2026-08-01",
+      visits: [
+        {
+          id: `APT-${patientId}`,
+          date: "2026-08-01",
+          time: "05:00 PM",
+          type: "كشف أول",
+          doctorName: "د. أحمد الشريف",
+          status: "مجدول",
+          rxNumber: `RX-10${patientId.replace("PT-", "")}`,
+          chiefComplaint: "فحص روتيني وسجل أولي",
+          diagnosis: "قيد التقييم",
+          prescription: "لم تصدر روشتة بعد",
+          doctorApprovedAt: null,
+          fee: "400 EGP",
+        },
+      ],
+    };
   });
 
-  // State for adding a new follow-up appointment modal
   const [showAddVisitModal, setShowAddVisitModal] = useState(false);
   const [visitType, setVisitType] = useState<"إعادة / متابعة" | "كشف جديد">("إعادة / متابعة");
   const [visitDate, setVisitDate] = useState("2026-08-05");
@@ -137,15 +231,18 @@ export default function PatientDetailPage({
 
   const handleAddVisit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newRxNumber = `RX-${Math.floor(10000 + Math.random() * 90000)}`;
-    const newVisit = {
-      id: `APT-${Math.floor(100 + Math.random() * 900)}`,
+    // توليد رقم روشتة منفصل للزيارة مع الاحتفاظ التام برقم الملف الطبي الثابت للمريض
+    const visitSeq = patient.visits.length + 1;
+    const newRxNumber = `RX-${10490 + visitSeq}`;
+    
+    const newVisit: Visit = {
+      id: `APT-${100 + visitSeq}`,
       date: visitDate,
       time: visitTime,
       type: visitType,
       doctorName: "د. أحمد الشريف",
       status: "مجدول",
-      rxNumber: newRxNumber,
+      rxNumber: newRxNumber, // رقم الروشتة الخاص بهذه الزيرة
       chiefComplaint: visitType === "إعادة / متابعة" ? "متابعة كشف سابقة واستشارة أدوية" : "كشف وتشخيص جديد",
       diagnosis: "في انتظار الكشف",
       prescription: "لم تحدد بعد",
@@ -178,15 +275,19 @@ export default function PatientDetailPage({
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-primary font-sans">{patient.name}</h1>
-              <RxTag number={patient.id} className="text-sm px-3 py-1" />
+              {/* رقم الملف الطبي دائم وثابت ومميز ببطاقة RxTag */}
+              <div className="flex items-center gap-1.5 bg-card px-2.5 py-1 rounded border border-primary/30">
+                <span className="text-xs text-muted-foreground font-semibold">رقم الملف الثابت:</span>
+                <RxTag number={patient.id} className="text-sm px-2.5 py-0.5" />
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              السجل الطبي والخط الزمني للإعادات والزيارات الطبية
+              السجل الطبي الدائم والخط الزمني للإعادات والزيارات الطبية
             </p>
           </div>
         </div>
 
-        {/* Action Button: EXACTLY 1 accent button per screen */}
+        {/* Action Button */}
         <button
           onClick={() => setShowAddVisitModal(true)}
           className="bg-accent text-accent-foreground font-semibold px-4 py-2 rounded-md hover:bg-accent/90 transition-colors text-sm shadow-sm flex items-center gap-2"
@@ -246,7 +347,7 @@ export default function PatientDetailPage({
         <div className="flex justify-between items-center border-b border-border/60 pb-3">
           <div className="flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-warning" />
-            <h3 className="font-bold text-foreground text-base">التاريخ المرضي المخلص والحساسيات</h3>
+            <h3 className="font-bold text-foreground text-base">التاريخ المرضي الدائم والحساسيات</h3>
           </div>
 
           {!editingHistory ? (
@@ -280,12 +381,12 @@ export default function PatientDetailPage({
         )}
       </div>
 
-      {/* Medical History Timeline (سجل الإعادات والزيارات السابقة) */}
+      {/* Medical History Timeline */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-bold text-primary flex items-center gap-2">
             <Activity className="w-5 h-5" />
-            السجل الطبي وسجل الإعادات والروشتات السابقة
+            السجل الطبي وسجل الإعادات والروشتات السابقة للمريض
           </h2>
           <span className="text-xs font-mono text-muted-foreground">
             عدد السجلات: {patient.visits.length}
@@ -324,7 +425,10 @@ export default function PatientDetailPage({
 
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-mono text-muted-foreground">الرسوم: {visit.fee}</span>
-                    <RxTag number={visit.rxNumber} />
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] text-muted-foreground">رقم الروشتة:</span>
+                      <RxTag number={visit.rxNumber} />
+                    </div>
                   </div>
                 </div>
 
@@ -366,7 +470,10 @@ export default function PatientDetailPage({
                     )}
                   </div>
 
-                  <span className="font-mono text-muted-foreground">كود المعاملة: {visit.id}</span>
+                  <div className="flex items-center gap-2 font-mono text-muted-foreground">
+                    <span>رقم الملف الدائم: <span className="font-bold text-primary">{patient.id}</span></span>
+                    <span>• المعاملة: {visit.id}</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -380,7 +487,10 @@ export default function PatientDetailPage({
           <div className="w-full max-w-md bg-card rounded-lg border border-border p-6 space-y-5 shadow-lg text-right">
             <div className="flex justify-between items-center border-b border-border pb-3">
               <h3 className="font-bold text-lg text-primary">حجز موعد إعادة جديدة للمريض</h3>
-              <RxTag number={patient.id} />
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">رقم الملف الثابت:</span>
+                <RxTag number={patient.id} />
+              </div>
             </div>
 
             <form onSubmit={handleAddVisit} className="space-y-4 text-sm">
@@ -418,7 +528,7 @@ export default function PatientDetailPage({
               </div>
 
               <div className="p-3 bg-primary/5 rounded border border-primary/20 text-xs text-primary">
-                تنبيه: ميعاد الإعادة سيتم ربطه تلقائياً بسجل <span className="font-mono">{patient.name}</span> وسيتم إرسال تذكير واتساب قبل الموعد.
+                تنبيه أمان: ميعاد الإعادة سيتسجل دائماً تحت رقم الملف الثابت الفريد <span className="font-bold font-mono text-accent">{patient.id}</span> لضمان تسلسل السجل الطبي لـ <span className="font-bold">{patient.name}</span>.
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
